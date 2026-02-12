@@ -13,7 +13,7 @@ playwright install chromium # for the crawling.
 
 
 run in teh venv:
-python3 scripts/pnpscr.py
+python3 scripts/scr/pnpscr.py
 #will automatically download all the pdf through dynamic scraping, skipping the shopnow button
 
 #ignore the pnpscr warnigns, the IDE does nto understand my complex though process. 
@@ -25,3 +25,7 @@ aws-vault exec <profile> -- aws s3api create-bucket \
 
 ADDED Scraped pdf files to the private bucket
 aws-vault exec <profile> -- aws s3 cp /data/* s3://<bucket-name>
+
+
+Extended a new script to conver teh pdfs to 
+python3 scripts/pdfscr/pdf-img/gen_pdf_img.py
