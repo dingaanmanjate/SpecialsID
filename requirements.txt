@@ -1,0 +1,13 @@
+#Web auto-scrape and anit-bot
+playwright
+playwright-stealth
+
+#data ingestion and processing(images)
+pillow
+numpy
+requests
+pdf2image
+
+#
+thefuzz
+boto3
