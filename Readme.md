@@ -17,3 +17,8 @@ python3 scripts/pnpscr.py
 #will automatically download all the pdf through dynamic scraping, skipping the shopnow button
 
 #ignore the pnpscr warnigns, the IDE does nto understand my complex though process. 
+
+CREATED private BUCKET:
+aws-vault exec <profile> -- aws s3api create-bucket \
+--bucket special-id-data-0129 --region af-south-1 \
+--create-bucket-configuration LocationConstraint=af-south-1
