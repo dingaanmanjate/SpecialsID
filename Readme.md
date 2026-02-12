@@ -24,7 +24,7 @@ aws-vault exec <profile> -- aws s3api create-bucket \
 --create-bucket-configuration LocationConstraint=af-south-1
 
 ADDED Scraped pdf files to the private bucket
-aws-vault exec <profile> -- aws s3 sync /data s3://<bucket-name>
+aws-vault exec <profile> -- aws s3 sync $PWD/data s3://<bucket-name>
 
 
 Extended a new script to conver teh pdfs to 
