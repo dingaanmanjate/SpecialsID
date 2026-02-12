@@ -1,7 +1,7 @@
 import os
 import requests
 from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
+from playwright_stealth import Stealth
 
 # Configuration
 BASE_URL = "https://www.pnp.co.za/catalogues"
@@ -28,7 +28,7 @@ def download_catalogues():
             });
         """)
         page = context.new_page()
-        stealth_sync(page) # This applies all stealth fixes to the page
+        #stealth_sync(page) # This applies all stealth fixes to the page
         
         print(f"Opening {BASE_URL}...")
         # Use a longer timeout and wait for till
