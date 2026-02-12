@@ -20,5 +20,8 @@ python3 scripts/pnpscr.py
 
 CREATED private BUCKET:
 aws-vault exec <profile> -- aws s3api create-bucket \
---bucket special-id-data-0129 --region af-south-1 \
+--bucket <bucket-name> --region af-south-1 \
 --create-bucket-configuration LocationConstraint=af-south-1
+
+ADDED Scraped pdf files to the private bucket
+aws-vault exec <profile> -- aws s3 cp /data/* s3://<bucket-name>
