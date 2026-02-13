@@ -1,3 +1,10 @@
 data/
 user_data/
 000metadata.json
+
+.env
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault

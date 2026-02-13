@@ -1,4 +1,4 @@
-##SpecialsID##
+##SpecialsID## NOT PROPERLY STRUCTURED AS OF YET<FOR PLANNING PURPOSES>
 A program for getting the latest specials from the popular local markets (currently Pick n Pay)
 
 locally using the developer's . ~/.venv/bin/activate
@@ -29,3 +29,13 @@ aws-vault exec <profile> -- aws s3 sync $PWD/data s3://<bucket-name>
 
 Extended a new script to conver teh pdfs to 
 python3 scripts/pdfscr/pdf-img/gen_pdf_img.py
+
+incoporate
+'''
+python3 scripts/pdfscr/img-json/pnp-vision-parser.py
+'''
+to parse teh scraped images to json format using AI.
+The scrip uses google gen AI, for image processign and a static system prompt to classifiy the products to verify repeatability. The model circulation is mainly for tackling freetier rate limits. 
+Since teh classification is a model native feature, simple models are utilized, namely:
+"gemini-2.5-flash-lite", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-3-flash-preview"
+all in the order of model performance and cost, correlated through a mathematical model from recent benchmark data. 
