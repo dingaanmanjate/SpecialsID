@@ -25,6 +25,8 @@ aws-vault exec <profile> -- aws s3api create-bucket \
 
 ADDED Scraped pdf files to the private bucket
 aws-vault exec <profile> -- aws s3 sync $PWD/data s3://<bucket-name>
+in cae 3 bucket is forgotten, use:
+aws-vault exec <profile> -- aws s3 ls || aws s3api list-bucket
 
 
 Extended a new script to conver teh pdfs to 
@@ -39,3 +41,8 @@ The scrip uses google gen AI, for image processign and a static system prompt to
 Since teh classification is a model native feature, simple models are utilized, namely:
 "gemini-2.5-flash-lite", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-3-flash-preview"
 all in the order of model performance and cost, correlated through a mathematical model from recent benchmark data. 
+
+synced parsed json files at point time, using:
+aws-vault exec <profile> -- aws s3 sync $PWD/data s3://<bucket-name>
+forgot bucket name so I used:
+aws-vault exec <profile> -- aws s3 ls || aws s3api list-bucket
