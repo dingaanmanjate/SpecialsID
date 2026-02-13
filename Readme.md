@@ -43,7 +43,7 @@ Since teh classification is a model native feature, simple models are utilized, 
 all in the order of model performance and cost, correlated through a mathematical model from recent benchmark data. 
 
 synced parsed json files at point time, using:
-aws-vault exec <profile> -- aws s3 sync $PWD/data s3://<bucket-name>
+aws-vault exec <profile> -- aws s3 sync
 forgot bucket name so I used:
 aws-vault exec <profile> -- aws s3 ls || aws s3api list-bucket
 
