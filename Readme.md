@@ -46,3 +46,6 @@ synced parsed json files at point time, using:
 aws-vault exec <profile> -- aws s3 sync $PWD/data s3://<bucket-name>
 forgot bucket name so I used:
 aws-vault exec <profile> -- aws s3 ls || aws s3api list-bucket
+
+changed directory name inconsistency from teh previous script, to remove teh "Valid_" tags, for further data integrity. 
+Proceeded failed parsing, to sync files to the s3 bucket, for the data lake comcement.
