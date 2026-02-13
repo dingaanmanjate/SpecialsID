@@ -5,7 +5,7 @@ aws-vault exec capaciti -- aws s3 sync $PWD s3://special-id-data-0129 \
 --exclude "user_data/*" \
 --exclude "sync.sh" \
 --exclude ".env" \
---exclude "README.md" \
+--exclude "*.md" \
 --exclude "000metadata.json" \
 --exclude "scraping/*" \
 --exclude "scripts/*" \
