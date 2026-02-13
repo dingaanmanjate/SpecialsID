@@ -54,7 +54,10 @@ def download_catalogues():
             parent = container.evaluate_handle("el => el.closest('.content')")
             date_element = parent.query_selector(".cat-validity-date")
             date_text = date_element.inner_text().strip() if date_element else "unknown_date"
-            date_slug = "".join([c if c.isalnum() or c in ("_", "-") else "_" for c in date_text])
+            
+            # Remove "Valid " prefix if present to keep filenames clean
+            clean_date_text = date_text.replace("Valid", "").strip()
+            date_slug = "".join([c if c.isalnum() or c in ("_", "-") else "_" for c in clean_date_text])
 
             links = container.query_selector_all("a")
             for link in links:

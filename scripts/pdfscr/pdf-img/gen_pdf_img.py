@@ -29,12 +29,17 @@ def convert_all_flyers():
 
             # 4. Find all PDFs in the Province folder
             for pdf_file in province_path.glob("*.pdf"):
-                print(f"  Processing: {pdf_file.name}")
-                
                 # Create a specific folder for this flyer's images
                 # e.g., data/interim/images/PnP/Gauteng/Weekly_Specials_Feb/
                 flyer_folder_name = pdf_file.stem  # Filename without .pdf
                 output_path = INTERIM_DIR / province_name / flyer_folder_name
+
+                # Check if images already exist to avoid redundant processing
+                if output_path.exists() and any(output_path.iterdir()):
+                    print(f"  Skipping: {pdf_file.name} (Images already exist)")
+                    continue
+
+                print(f"  Processing: {pdf_file.name}")
                 output_path.mkdir(parents=True, exist_ok=True)
 
                 try:
