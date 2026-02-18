@@ -33,7 +33,7 @@ resource "aws_iam_role" "lambda_role" {
 # CloudWatch Logs Permission
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam:aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 # S3 Access Policy
