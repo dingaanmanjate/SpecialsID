@@ -79,4 +79,7 @@ and run sudo systemctl start docker
 final step for the full cloud deployment
 cd infrastructure
 aws-vault exec <your-profile> -- terraform init
+
+./import_ecr.sh <your-profile>
+
 aws-vault exec <your-profile> -- terraform apply

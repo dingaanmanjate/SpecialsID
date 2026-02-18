@@ -9,3 +9,4 @@ user_data/
 .flaskenv*
 !.env.project
 !.env.vault
+terraform*
