@@ -54,7 +54,7 @@ added a sync.sh script for dynamic syncing, for repeatability, executed through:
 ./sync.sh
 
 had to clear the bucket for a clean slate using:
-aws-vault exec capaciti -- aws s3 rm s3://special-id-data-0129 --recursive
+aws-vault exec <profile> -- aws s3 rm s3://<bucket-name> --recursive
 
 tehn populated teh bucket using the ./sync.sh script. 
 All raw, intering and processed data has not been uploaded to the S3 bucket to undergo cleaning and further processign for s3 access. 

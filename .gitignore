@@ -1,9 +1,9 @@
 data/
 user_data/
 000metadata.json
-
+*/*teraform.*
 .env
-
+*/variables.tf
 .env*
 .flaskenv*
 !.env.project
