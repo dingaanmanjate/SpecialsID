@@ -67,3 +67,8 @@ aws-vault exec <profile> -- aws ssm put-parameter \
     --name "/SpecialsID/gemini-api-key" \
     --value "<Actual-key>" \
     --type "SecureString"
+
+Added script to puch Dockerfiles to ECR, compatible with aws-vault. You can run it with 
+'''sh
+aws-vault exec <your-profile> -- ./push_images.sh
+'''
