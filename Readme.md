@@ -60,3 +60,10 @@ tehn populated teh bucket using the ./sync.sh script.
 All raw, intering and processed data has not been uploaded to the S3 bucket to undergo cleaning and further processign for s3 access. 
 
 Prepared teh data ingestion functions for full cloud migration, changing the gen_pdf_imgLambda to reference the GEMINI_API_KEY to reference it from the SSM parameter store
+
+added the GEMINI_API_KEY to the store using:
+
+aws-vault exec <profile> -- aws ssm put-parameter \
+    --name "/SpecialsID/gemini-api-key" \
+    --value "<Actual-key>" \
+    --type "SecureString"
