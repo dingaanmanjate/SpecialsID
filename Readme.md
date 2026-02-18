@@ -72,3 +72,6 @@ Added script to puch Dockerfiles to ECR, compatible with aws-vault. You can run 
 '''sh
 aws-vault exec <your-profile> -- ./push_images.sh
 '''
+
+ensure docker is installe 
+and run sudo systemctl start docker
