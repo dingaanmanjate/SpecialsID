@@ -27,7 +27,7 @@ echo "🔄 Importing ECR repositories into Terraform state..."
 for SERVICE in "${SERVICES[@]}"; do
     REPO_NAME="${PROJECT_NAME}-${SERVICE}"
     echo "  -> Importing ${REPO_NAME}"
-    terraform_cmd import "aws_ecr_repository.repos["${SERVICE}"]" "${REPO_NAME}"
+    terraform_cmd import 'aws_ecr_repository.repos["'${SERVICE}'"]' "${REPO_NAME}"
 done
 
 echo "✅ Import complete! You can now run 'terraform apply' again."
