@@ -1,4 +1,6 @@
 #!/bin/bash
+# Exit on error and print commands
+set -ex
 
 # Configuration
 REGION="af-south-1"
@@ -45,14 +47,9 @@ for SERVICE in "${SERVICES[@]}"; do
     echo "📦 Processing: ${SERVICE}"
     
     # 2. Ensure Repository Exists
-    aws_cmd ecr describe-repositories --repository-names ${REPO_NAME} --region ${REGION} > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        echo "⚠️ Repository ${REPO_NAME} does not exist. Creating..."
-        aws_cmd ecr create-repository --repository-name ${REPO_NAME} --region ${REGION}
-    fi
+    aws_cmd ecr describe-repositories --repository-names ${REPO_NAME} --region ${REGION} > /dev/null 2>&1 || aws_cmd ecr create-repository --repository-name ${REPO_NAME} --region ${REGION}
 
     # 3. Build Image
-    # Using --platform linux/amd64 for AWS Lambda compatibility
     echo "🛠 Building image for ${SERVICE}..."
     docker build --platform linux/amd64 -t ${REPO_NAME} ./infrastructure/lambda_images/${SERVICE}
 

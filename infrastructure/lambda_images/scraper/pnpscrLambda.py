@@ -7,10 +7,12 @@ from playwright_stealth import Stealth
 from botocore.exceptions import ClientError
 
 # Configuration for AWS Lambda
-# Lambda only has write access to /tmp
 BASE_URL = "https://www.pnp.co.za/catalogues"
 ROOT_DIR = "/tmp/data/raw/PnP"
 USER_DATA_DIR = "/tmp/user_data"
+
+# Ensure Playwright finds the browser in the right path inside the container
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/ms-playwright"
 
 # S3 Configuration from environment variables
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME")
@@ -45,8 +47,6 @@ def download_catalogues():
     os.makedirs(USER_DATA_DIR, exist_ok=True)
 
     with sync_playwright() as p:
-        # Note: Standard playwright might not work in Lambda without specific layers/binaries.
-        # This setup assumes the environment is configured with necessary dependencies.
         context = p.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR, 
             headless=True, 
