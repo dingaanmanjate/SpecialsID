@@ -75,3 +75,8 @@ aws-vault exec <your-profile> -- ./push_images.sh
 
 ensure docker is installe 
 and run sudo systemctl start docker
+
+final step for the full cloud deployment
+cd infrastructure
+aws-vault exec <your-profile> -- terraform init
+aws-vault exec <your-profile> -- terraform apply
