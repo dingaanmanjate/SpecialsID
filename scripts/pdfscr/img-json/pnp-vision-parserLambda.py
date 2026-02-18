@@ -134,20 +134,3 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps('Vision parsing complete')
     }
-
-def lambda_handler(event, context):
-    """
-    Triggered by S3 ObjectCreated events.
-    """
-    for record in event.get('Records', []):
-        key = record['s3']['object']['key']
-        
-        # Only process images in the interim directory
-        if (key.endswith('.jpg') or key.endswith('.png')) and 'data/interim/images/PnP/' in key:
-            print(f"Processing new image: {key}")
-            process_image(key)
-            
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Vision parsing complete')
-    }
