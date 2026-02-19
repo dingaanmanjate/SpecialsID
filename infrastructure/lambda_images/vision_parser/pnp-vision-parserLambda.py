@@ -25,20 +25,43 @@ def file_exists_in_s3(bucket, key):
         return False
 
 # Global client to be initialized lazily
-_genai_client = None
+_genai_clients = []
+_current_client_index = 0
 
-def get_genai_client():
-    global _genai_client
-    if _genai_client is None:
-        print(f"Fetching API key from SSM: {GEMINI_API_KEY_SSM_NAME}")
-        response = ssm_client.get_parameter(
-            Name=GEMINI_API_KEY_SSM_NAME,
-            WithDecryption=True
-        )
-        api_key = response['Parameter']['Value']
-        # Initialize GenAI Client with the key from SSM
-        _genai_client = genai.Client(api_key=api_key)
-    return _genai_client
+def get_genai_clients():
+    global _genai_clients
+    if not _genai_clients:
+        print(f"Fetching API keys from SSM: {GEMINI_API_KEY_SSM_NAME}")
+        try:
+            response = ssm_client.get_parameter(
+                Name=GEMINI_API_KEY_SSM_NAME,
+                WithDecryption=True
+            )
+            # Support multiple keys separated by commas
+            api_keys = [k.strip() for k in response['Parameter']['Value'].split(',') if k.strip()]
+            
+            for key in api_keys:
+                _genai_clients.append(genai.Client(api_key=key))
+                
+            if not _genai_clients:
+                raise Exception("No Gemini API keys found in SSM parameter.")
+            print(f"Successfully loaded {len(_genai_clients)} API keys.")
+        except Exception as e:
+            print(f"Error fetching API keys: {e}")
+            raise
+            
+    return _genai_clients
+
+def get_current_client():
+    clients = get_genai_clients()
+    return clients[_current_client_index]
+
+def rotate_client():
+    global _current_client_index
+    clients = get_genai_clients()
+    _current_client_index = (_current_client_index + 1) % len(clients)
+    print(f"🔄 Rotating to Gemini API key index: {_current_client_index}")
+    return clients[_current_client_index]
 
 SYSTEM_INSTRUCTION = """
 You are a specialized grocery data extractor for the South African market.
@@ -91,45 +114,53 @@ def process_image(s3_key):
         print(f"Error reading image from S3: {e}")
         return "error"
 
-    client = get_genai_client()
-
     # Try models
     for model_id in MODELS:
-        try:
-            print(f"🔍 Processing with model: {model_id}")
-            response = client.models.generate_content(
-                model=model_id,
-                contents=[img, "Extract grocery data according to system instructions."],
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_INSTRUCTION,
-                    response_mime_type="application/json"
+        clients = get_genai_clients()
+        # Try each client for the current model if rate limited
+        for _ in range(len(clients)):
+            client = get_current_client()
+            try:
+                print(f"🔍 Processing with model: {model_id} (Key Index: {_current_client_index})")
+                response = client.models.generate_content(
+                    model=model_id,
+                    contents=[img, "Extract grocery data according to system instructions."],
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        response_mime_type="application/json"
+                    )
                 )
-            )
 
-            data = response.parsed if hasattr(response, 'parsed') and response.parsed is not None else None
-            
-            if data is None and hasattr(response, 'text') and response.text:
-                try:
-                    data = json.loads(response.text)
-                except json.JSONDecodeError:
-                    pass
+                data = response.parsed if hasattr(response, 'parsed') and response.parsed is not None else None
+                
+                if data is None and hasattr(response, 'text') and response.text:
+                    try:
+                        data = json.loads(response.text)
+                    except json.JSONDecodeError:
+                        pass
 
-            if data:
-                upload_to_s3(data, output_key)
-                print(f"✅ Success with {model_id}")
-                return "processed"
-            else:
-                print(f"⚠️ No data extracted with {model_id}")
+                if data:
+                    upload_to_s3(data, output_key)
+                    print(f"✅ Success with {model_id}")
+                    return "processed"
+                else:
+                    print(f"⚠️ No data extracted with {model_id}")
+                    break # Move to next model if no data but no error
 
-        except Exception as e:
-            error_msg = str(e).lower()
-            print(f"❌ Error with {model_id}: {e}")
-            if "429" in error_msg or "resource_exhausted" in error_msg:
-                print(f"Rate limit hit for {model_id}, moving to next...")
-                continue
-            continue
+            except Exception as e:
+                error_msg = str(e).lower()
+                print(f"❌ Error with {model_id} (Key Index: {_current_client_index}): {e}")
+                if "429" in error_msg or "resource_exhausted" in error_msg:
+                    if len(clients) > 1:
+                        print(f"Rate limit hit, rotating client...")
+                        rotate_client()
+                        continue # Retry same model with next client
+                    else:
+                        print(f"Rate limit hit and only one key available.")
+                        break # Move to next model
+                break # Non-rate-limit error, move to next model
 
-    print(f"❌ All models failed for {s3_key}")
+    print(f"❌ All models and keys failed for {s3_key}")
     return "failed"
 
 def discover_and_process(prefix, token, context):

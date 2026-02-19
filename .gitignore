@@ -11,4 +11,4 @@ user_data/
 !.env.vault
 terraform*
 event.json
-response.json
+response.jsonGEMINI_REPO_MAP.md
