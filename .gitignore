@@ -10,3 +10,5 @@ user_data/
 !.env.project
 !.env.vault
 terraform*
+event.json
+response.json

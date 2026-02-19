@@ -84,3 +84,11 @@ aws-vault exec <your-profile> -- terraform init
 
 aws-vault exec <your-profile> -- terraform apply
 
+aws-vault exec capaciti -- aws lambda invoke \
+  --function-name <function-name> \
+  --payload fileb://<filename> \
+  response.json
+
+ aws-vault exec <profile> -- aws lambda update-function-code \
+   --function-name <function-name> \
+   --image-uri $(aws-vault exec <profile> -- aws ecr describe-repositories --repository-names <function-name> --query 'repositories[0].repositoryUri' --output text):latest
