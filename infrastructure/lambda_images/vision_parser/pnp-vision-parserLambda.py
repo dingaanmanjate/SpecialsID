@@ -10,7 +10,7 @@ import io
 # S3 Configuration from environment variables
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME")
 OUTPUT_PREFIX = "data/pro/json/PnP/"
-GEMINI_API_KEY_SSM_NAME = os.environ.get("GEMINI_API_KEY_SSM_NAME", "/SpecialsID/gemini-api-key")
+GEMINI_API_KEY_SSM_NAME = os.environ.get("GEMINI_API_KEY_SSM_NAME", "/SpecialsID/gemini_api_key")
 
 MODELS = ["gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-2.0-flash"]
 s3_client = boto3.client('s3')
