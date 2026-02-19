@@ -15,6 +15,14 @@ GEMINI_API_KEY_SSM_NAME = os.environ.get("GEMINI_API_KEY_SSM_NAME", "/SpecialsID
 MODELS = ["gemini-2.5-flash-lite", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-3-flash-preview"]
 s3_client = boto3.client('s3')
 ssm_client = boto3.client('ssm')
+lambda_client = boto3.client('lambda')
+
+def file_exists_in_s3(bucket, key):
+    try:
+        s3_client.head_object(Bucket=bucket, Key=key)
+        return True
+    except:
+        return False
 
 # Global client to be initialized lazily
 _genai_client = None
@@ -70,6 +78,10 @@ def process_image(s3_key):
     except IndexError:
         output_key = f"{OUTPUT_PREFIX}{os.path.splitext(filename)[0]}.json"
 
+    if file_exists_in_s3(S3_BUCKET, output_key):
+        print(f"⏩ Skipping (already exists in S3): {output_key}")
+        return "skipped"
+
     print(f"Downloading image from S3: {s3_key}")
     try:
         response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
@@ -77,7 +89,7 @@ def process_image(s3_key):
         img = Image.open(io.BytesIO(image_bytes))
     except Exception as e:
         print(f"Error reading image from S3: {e}")
-        return
+        return "error"
 
     client = get_genai_client()
 
@@ -105,27 +117,88 @@ def process_image(s3_key):
             if data:
                 upload_to_s3(data, output_key)
                 print(f"✅ Success with {model_id}")
-                return
+                return "processed"
             else:
                 print(f"⚠️ No data extracted with {model_id}")
 
         except Exception as e:
+            error_msg = str(e).lower()
             print(f"❌ Error with {model_id}: {e}")
-            if "429" in str(e) or "resource_exhausted" in str(e).lower():
-                print("Rate limit hit, moving to next model...")
+            if "429" in error_msg or "resource_exhausted" in error_msg:
+                print(f"Rate limit hit for {model_id}, moving to next...")
                 continue
             continue
 
     print(f"❌ All models failed for {s3_key}")
+    return "failed"
+
+def discover_and_process(prefix, token, context):
+    """
+    Lists all images in a prefix and processes them recursively.
+    """
+    print(f"🕵️ Starting discovery in: {prefix}")
+    params = {'Bucket': S3_BUCKET, 'Prefix': prefix}
+    if token:
+        params['ContinuationToken'] = token
+
+    response = s3_client.list_objects_v2(**params)
+    
+    if 'Contents' not in response:
+        print("No more files to process.")
+        return
+
+    for obj in response['Contents']:
+        # Check remaining time (stop if less than 60 seconds remain)
+        if context.get_remaining_time_in_millis() < 60000:
+            print("⏳ Time running out. Triggering next batch...")
+            new_token = response.get('NextContinuationToken') or response.get('ContinuationToken')
+            if not new_token: # list_objects_v2 might not give NextContinuationToken if it's the last page
+                # If we don't have a token but we have more pages, we might need to handle this.
+                # However, list_objects_v2 with pagination is usually better.
+                pass
+            
+            trigger_self(prefix, response.get('NextContinuationToken'))
+            return
+
+        key = obj['Key']
+        if (key.endswith('.jpg') or key.endswith('.png')) and 'data/interim/images/PnP/' in key:
+            print(f"Processing image from discovery: {key}")
+            result = process_image(key)
+            if result == "processed":
+                time.sleep(2) # Small delay to respect quotas
+
+    # If there are more pages, trigger the next one
+    if response.get('IsTruncated'):
+        print("Moving to next page of S3 results...")
+        trigger_self(prefix, response.get('NextContinuationToken'))
+
+def trigger_self(prefix, token):
+    """
+    Invokes the current lambda function asynchronously.
+    """
+    payload = {
+        'discovery_prefix': prefix,
+        'continuation_token': token
+    }
+    print(f"Self-triggering with token: {token}")
+    lambda_client.invoke(
+        FunctionName=os.environ.get('AWS_LAMBDA_FUNCTION_NAME'),
+        InvocationType='Event',
+        Payload=json.dumps(payload)
+    )
 
 def lambda_handler(event, context):
     """
-    Triggered by S3 ObjectCreated events.
+    Handles both S3 events and recursive discovery events.
     """
+    # 1. Check for Discovery/Crawl mode
+    if 'discovery_prefix' in event:
+        discover_and_process(event['discovery_prefix'], event.get('continuation_token'), context)
+        return {'statusCode': 200, 'body': 'Discovery initiated'}
+
+    # 2. Check for S3 Events
     for record in event.get('Records', []):
         key = record['s3']['object']['key']
-        
-        # Only process images in the interim directory
         if (key.endswith('.jpg') or key.endswith('.png')) and 'data/interim/images/PnP/' in key:
             print(f"Processing new image: {key}")
             process_image(key)

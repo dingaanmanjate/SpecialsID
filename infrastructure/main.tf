@@ -85,12 +85,28 @@ resource "aws_iam_policy" "lambda_ssm_policy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_ssm" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = aws_iam_policy.lambda_ssm_policy.arn
+resource "aws_iam_policy" "lambda_invoke_policy" {
+  name        = "${var.project_name}-invoke-policy"
+  description = "Allow lambda to invoke itself for recursive crawling"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "lambda:InvokeFunction"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
 }
 
-# --- Lambda Functions ---
+resource "aws_iam_role_policy_attachment" "lambda_invoke" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_invoke_policy.arn
+}
 
 resource "aws_lambda_function" "scraper" {
   function_name = "${var.project_name}-scraper"
