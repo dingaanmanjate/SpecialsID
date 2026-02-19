@@ -16,6 +16,13 @@ MODELS = ["gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-2.0-flash"]
 s3_client = boto3.client('s3')
 ssm_client = boto3.client('ssm')
 
+def file_exists_in_s3(bucket, key):
+    try:
+        s3_client.head_object(Bucket=bucket, Key=key)
+        return True
+    except:
+        return False
+
 # Global client to be initialized lazily
 _genai_client = None
 
@@ -69,6 +76,10 @@ def process_image(s3_key):
         output_key = f"{OUTPUT_PREFIX}{os.path.splitext(relative_path)[0]}.json"
     except IndexError:
         output_key = f"{OUTPUT_PREFIX}{os.path.splitext(filename)[0]}.json"
+
+    if file_exists_in_s3(S3_BUCKET, output_key):
+        print(f"⏩ Skipping (already exists in S3): {output_key}")
+        return
 
     print(f"Downloading image from S3: {s3_key}")
     try:
