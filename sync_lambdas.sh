@@ -11,6 +11,7 @@ declare -A LAMBDAS=(
     ["scripts/pdfscr/pdf-img/gen_pdf_imgLambda.py"]="infrastructure/lambda_images/pdf_converter/"
     ["scripts/pdfscr/img-json/pnp-vision-parserLambda.py"]="infrastructure/lambda_images/vision_parser/"
     ["scripts/pdfscr/img-shr/pnp-cropperLambda.py"]="infrastructure/lambda_images/cropper/"
+    ["infrastructure/lambda_images/data_cleaner/pnp-cleanerLambda.py"]="infrastructure/lambda_images/data_cleaner/"
 )
 
 # Iterate over the files and copy them

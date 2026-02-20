@@ -37,7 +37,7 @@ echo "🔐 Logging into ECR..."
 aws_cmd ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ECR_URL}
 
 # Array of services to process
-SERVICES=("scraper" "pdf_converter" "vision_parser" "cropper")
+SERVICES=("scraper" "pdf_converter" "vision_parser" "cropper" "data_cleaner")
 
 for SERVICE in "${SERVICES[@]}"; do
     REPO_NAME="${PROJECT_NAME}-${SERVICE}"

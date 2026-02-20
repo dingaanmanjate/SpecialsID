@@ -10,7 +10,7 @@ if [ ! -f "main.tf" ]; then
 fi
 
 PROJECT_NAME="specials-id"
-SERVICES=("scraper" "pdf_converter" "vision_parser" "cropper")
+SERVICES=("scraper" "pdf_converter" "vision_parser" "cropper" "data_cleaner")
 PROFILE=${1:-$AWS_PROFILE}
 
 # Helper function to run Terraform commands

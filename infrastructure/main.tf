@@ -7,9 +7,15 @@ data "aws_s3_bucket" "data_bucket" {
   bucket = var.existing_bucket_name
 }
 
+# --- Import existing resources ---
+import {
+  to = aws_ecr_repository.repos["data_cleaner"]
+  id = "specials-id-data_cleaner"
+}
+
 # --- ECR Repositories for Dockerized Lambdas ---
 resource "aws_ecr_repository" "repos" {
-  for_each = toset(["scraper", "pdf_converter", "vision_parser", "cropper"])
+  for_each = toset(["scraper", "pdf_converter", "vision_parser", "cropper", "data_cleaner"])
   name     = "${var.project_name}-${each.key}"
   force_delete = true
 }
@@ -48,6 +54,7 @@ resource "aws_iam_policy" "lambda_s3_policy" {
         Action = [
           "s3:GetObject",
           "s3:PutObject",
+          "s3:DeleteObject",
           "s3:ListBucket",
           "s3:HeadObject"
         ]
@@ -174,6 +181,22 @@ resource "aws_lambda_function" "cropper" {
   }
 }
 
+resource "aws_lambda_function" "data_cleaner" {
+  function_name = "${var.project_name}-data-cleaner"
+  role          = aws_iam_role.lambda_role.arn
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.repos["data_cleaner"].repository_url}:latest"
+  timeout       = 300
+  memory_size   = 2048 # Pandas/awswrangler need more memory
+
+  environment {
+    variables = {
+      S3_BUCKET_NAME       = data.aws_s3_bucket.data_bucket.id
+      CROPPER_LAMBDA_NAME = aws_lambda_function.cropper.function_name
+    }
+  }
+}
+
 # --- S3 Event Triggers ---
 
 resource "aws_lambda_permission" "allow_s3_converter" {
@@ -192,10 +215,18 @@ resource "aws_lambda_permission" "allow_s3_parser" {
   source_arn    = data.aws_s3_bucket.data_bucket.arn
 }
 
-resource "aws_lambda_permission" "allow_s3_cropper" {
-  statement_id  = "AllowExecutionFromS3"
+resource "aws_lambda_permission" "allow_data_cleaner_to_invoke_cropper" {
+  statement_id  = "AllowDataCleanerInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cropper.function_name
+  principal     = "lambda.amazonaws.com"
+  source_arn    = aws_lambda_function.data_cleaner.arn
+}
+
+resource "aws_lambda_permission" "allow_s3_cleaner" {
+  statement_id  = "AllowExecutionFromS3"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.data_cleaner.function_name
   principal     = "s3.amazonaws.com"
   source_arn    = data.aws_s3_bucket.data_bucket.arn
 }
@@ -218,7 +249,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
   }
 
   lambda_function {
-    lambda_function_arn = aws_lambda_function.cropper.arn
+    lambda_function_arn = aws_lambda_function.data_cleaner.arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "data/pro/json/PnP/"
     filter_suffix       = ".json"
@@ -227,7 +258,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
   depends_on = [
     aws_lambda_permission.allow_s3_converter,
     aws_lambda_permission.allow_s3_parser,
-    aws_lambda_permission.allow_s3_cropper
+    aws_lambda_permission.allow_s3_cleaner
   ]
 }
 
@@ -250,4 +281,72 @@ resource "aws_lambda_permission" "allow_eventbridge" {
   function_name = aws_lambda_function.scraper.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.daily_scrape.arn
+}
+
+# --- AWS Glue Data Catalog & Crawler ---
+
+resource "aws_glue_catalog_database" "specials_db" {
+  name = "${var.project_name}_db"
+}
+
+resource "aws_iam_role" "glue_role" {
+  name = "${var.project_name}-glue-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "glue.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "glue_service" {
+  role       = aws_iam_role.glue_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}
+
+resource "aws_iam_policy" "glue_s3_policy" {
+  name        = "${var.project_name}-glue-s3-policy"
+  description = "Permissions for Glue to access S3 data"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Effect   = "Allow"
+        Resource = [
+          "${data.aws_s3_bucket.data_bucket.arn}",
+          "${data.aws_s3_bucket.data_bucket.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "glue_s3" {
+  role       = aws_iam_role.glue_role.name
+  policy_arn = aws_iam_policy.glue_s3_policy.arn
+}
+
+resource "aws_glue_crawler" "data_crawler" {
+  database_name = aws_glue_catalog_database.specials_db.name
+  name          = "${var.project_name}-clean-data-crawler"
+  role          = aws_iam_role.glue_role.arn
+
+  s3_target {
+    path = "s3://${data.aws_s3_bucket.data_bucket.id}/data/clean/PnP/"
+  }
+
+  schema_change_policy {
+    delete_behavior = "LOG"
+    update_behavior = "UPDATE_IN_DATABASE"
+  }
 }
