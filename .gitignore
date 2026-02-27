@@ -4,11 +4,14 @@ user_data/
 */*teraform.*
 */.terraform*
 .env
-#*/variables.tf
+*/variables.tf
 .env*
 .flaskenv*
 !.env.project
 !.env.vault
 terraform*
 event.json
-response.jsonGEMINI_REPO_MAP.md
+response.json
+GEMINI_REPO_MAP.md
+.streamlit/*
+*/__pycache__

@@ -9,6 +9,10 @@ requests
 pdf2image
 google-genai
 
-#
-thefuzz
+# dashboard and data
+streamlit
+pandas
+pyarrow
 boto3
+thefuzz
+awswrangler
