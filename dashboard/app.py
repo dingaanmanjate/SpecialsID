@@ -8,7 +8,7 @@ from utils import get_available_partitions, load_data, apply_custom_css, parse_d
 
 # Page Configuration
 st.set_page_config(
-    page_title="Antigravity - Smart Specials",
+    page_title="Specials-ID",
     page_icon="🚀",
     layout="wide",
 )
